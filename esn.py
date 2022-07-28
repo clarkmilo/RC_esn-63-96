@@ -45,13 +45,14 @@ plt.savefig('ftp')
 # generate the ESN reservoir
 inSize = outSize = 3
 resSize = 828
-a = 1- 0.2212 # leaking rate
+a =  0.2212 # leaking rate
 #np.random.seed(42)
-Win = (np.random.rand(resSize,inSize) - 0.5) * 1
-W = np.random.rand(resSize,resSize) - 0.5 
+Win = (np.random.rand(resSize,inSize) - 0.5) * 2
+#W = (np.random.rand(resSize,resSize) - 0.5) * 1 
 #establish desired sparsity
 
 Sparsity = .5770
+"""
 deletion_matrix = np.random.rand(resSize, resSize)
 deletions_id = []
 for a,i  in enumerate(deletion_matrix):
@@ -61,6 +62,8 @@ for a,i  in enumerate(deletion_matrix):
 
     for i in deletions_id:
         W[i[0]][i[1]] = 0
+"""
+W = sparse.rand(resSize,resSize,density=Sparsity).todense() 
 
 
 # normalizing and setting spectral radius (correct, slow):
@@ -68,7 +71,7 @@ print('Computing spectral radius...')
 rhoW = np.max(np.abs(linalg.eigvals(W)))
 print('done.', rhoW)
 spectral_r = 1.3498
-W *= 1.3498 / rhoW
+W = (W / rhoW) * .3498
 #print(W)
 #print(Win)
 lno = np.zeros((resSize,1))
@@ -81,12 +84,12 @@ dataa = np.transpose(data.y)
 # run the reservoir with the data and collect X
 x = np.zeros((resSize,1))
 for t in range(trainLen):
-    u = dataa[t]
+    u = dataa[t] / 15
     
-    x = (1-a)*x +  a*np.tanh( np.dot( Win, np.vstack((u)) ) + np.dot( W, x ) )
-    print(x)
+    x = (a)*x +  (1-a)*np.tanh( np.dot( Win, np.vstack((u)) ) + np.dot( W, x ) )
+    #print(x)
     if t >= initLen:
-        X[:,t-initLen] = np.vstack((x))[:,0]
+        X[:,t-initLen] = np.hstack((x))[:,0]
    
 # train the output by ridge regression
 reg = 1.2848 * 10 ** -5  # regularization coefficient
@@ -96,6 +99,11 @@ reg = 1.2848 * 10 ** -5  # regularization coefficient
 #    reg*np.eye(1+inSize+resSize) ) )
 # using scipy.linalg.solve:
 #print(X)
+for i in X:
+    for a,j in enumerate(i):
+        if a%2 == 0:
+            j=j**2
+
 Wout = linalg.solve( np.dot(X,X.T) + reg*np.eye(resSize), 
     np.dot(X,Yt.T) ).T
 
@@ -105,25 +113,29 @@ Y = np.zeros((outSize,testLen))
 u = dataa[trainLen+1]
 for t in range(testLen):
     
-    x = (1-a)*x + a*np.tanh( np.dot( Win, np.vstack((u)) ) + np.dot( W, x ) )
+    x = (a)*x + (1-a)*np.tanh( np.dot( Win, np.vstack((u)) ) + np.dot( W, x ) )
+    for g,i in enumerate(x):
+        if g%2==0:
+            i=i**2
     y = np.dot( Wout, np.vstack((x)) )
     Y[:,t] = np.transpose(y)
     # generative mode:
     u = y
     ## this would be a predictive mode:
     #u = data[trainLen+t+1] 
-
+'''
 # compute MSE for the first errorLen time steps
 errorLen = 500
 #print(dataa)
 #print(np.transpose(Y))
 mse = sum( np.square( dataa[trainLen+1:trainLen+errorLen+1] - np.transpose(Y)[0:errorLen] ) ) / errorLen
 print('MSE = ' + str( mse ))
+'''
 y_news = np.transpose(Y.T)
 # plot some signals
 plt.figure(1).clear()
 plt.plot( data.y[1][trainLen+1:trainLen+800+1], 'g' )
-plt.plot( y_news[1][0:800], 'b' )
+plt.plot( y_news[1][0:800] * 15, 'b' )
 plt.title('Target and generated signals $y(n)$ starting at $n=0$')
 plt.legend(['Target signal', 'Free-running predicted signal'])
 
@@ -137,3 +149,4 @@ plt.title(r'Some reservoir activations $\mathbf{x}(n)$')
 
 plt.show()
 #plt.savefig('fml')
+
