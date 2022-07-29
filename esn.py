@@ -93,12 +93,7 @@ for t in range(trainLen):
    
 # train the output by ridge regression
 reg = 1.2848 * 10 ** -5  # regularization coefficient
-# direct equations from texts:
-#X_T = X.T
-#Wout = np.dot( np.dot(Yt,X_T), linalg.inv( np.dot(X,X_T) + \
-#    reg*np.eye(1+inSize+resSize) ) )
-# using scipy.linalg.solve:
-#print(X)
+
 for i in X:
     for a,j in enumerate(i):
         if a%2 == 0:
@@ -121,16 +116,8 @@ for t in range(testLen):
     Y[:,t] = np.transpose(y)
     # generative mode:
     u = y
-    ## this would be a predictive mode:
-    #u = data[trainLen+t+1] 
-'''
-# compute MSE for the first errorLen time steps
-errorLen = 500
-#print(dataa)
-#print(np.transpose(Y))
-mse = sum( np.square( dataa[trainLen+1:trainLen+errorLen+1] - np.transpose(Y)[0:errorLen] ) ) / errorLen
-print('MSE = ' + str( mse ))
-'''
+    
+
 y_news = np.transpose(Y.T)
 # plot some signals
 plt.figure(1).clear()
@@ -149,4 +136,3 @@ plt.title(r'Some reservoir activations $\mathbf{x}(n)$')
 
 plt.show()
 #plt.savefig('fml')
-
